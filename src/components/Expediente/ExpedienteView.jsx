@@ -40,6 +40,13 @@ export default function ExpedienteView({ expediente, onBack }) {
               <span>Fallecimiento: {expediente?.fechaFallecimiento || '---'}</span>
               <button onClick={() => handleEdit('fechaFallecimiento', 'Fecha de Fallecimiento')} className="hover:text-white transition"><Edit3 className="w-3 h-3" /></button>
             </div>
+            <div className="flex gap-4 mt-1 text-slate-400 text-xs items-center">
+              <span>Domicilio: {expediente?.ultimoDomicilio || '---'}</span>
+              <button onClick={() => handleEdit('ultimoDomicilio', 'Último Domicilio')} className="hover:text-white transition"><Edit3 className="w-3 h-3" /></button>
+              <span>•</span>
+              <span>Estado Civil: {expediente?.estadoCivil || '---'}</span>
+              <button onClick={() => handleEdit('estadoCivil', 'Estado Civil')} className="hover:text-white transition"><Edit3 className="w-3 h-3" /></button>
+            </div>
           </div>
         </div>
 

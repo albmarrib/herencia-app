@@ -52,9 +52,10 @@ export const SuccessionProvider = ({ children, expedienteId }) => {
   const addHerederoPrincipal = async () => {
     const nombre = window.prompt("Nombre del Heredero Principal:");
     if (!nombre) return;
+    const dni = window.prompt("DNI del Heredero Principal (opcional):") || '';
     const nuevoId = `hp-${Date.now()}`;
     await setDoc(doc(db, `expedientes/${expedienteId}/herederos`, nuevoId), { 
-      id: nuevoId, nombre: nombre, dni: '', estado: 'vivo', descendientes: [] 
+      id: nuevoId, nombre: nombre, dni: dni, estado: 'vivo', descendientes: [] 
     });
   };
 
@@ -63,9 +64,10 @@ export const SuccessionProvider = ({ children, expedienteId }) => {
   const addDescendiente = async (idHerederoPrincipal) => {
     const nombre = window.prompt("Nombre del Descendiente:");
     if (!nombre) return;
+    const dni = window.prompt("DNI del Descendiente (opcional):") || '';
     const h = herederos.find(x => x.id === idHerederoPrincipal);
     if (!h) return;
-    const nuevosDescendientes = [...h.descendientes, { id: `${h.id}-${Date.now()}`, nombre: nombre, dni: '' }];
+    const nuevosDescendientes = [...h.descendientes, { id: `${h.id}-${Date.now()}`, nombre: nombre, dni: dni }];
     await updateDoc(doc(db, `expedientes/${expedienteId}/herederos`, idHerederoPrincipal), { descendientes: nuevosDescendientes });
   };
 
@@ -128,7 +130,7 @@ export const SuccessionProvider = ({ children, expedienteId }) => {
       deudas, addDeuda, removeDeuda,
       herederos, setHerederos,
       updateHeredero, addHerederoPrincipal, removeHerederoPrincipal, 
-      addDescendiente, removeDescendiente,
+      addDescendiente, updateDescendiente, removeDescendiente,
       calculos
     }}>
       {children}

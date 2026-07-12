@@ -43,21 +43,26 @@ export default function SuccessionTree() {
                   {index + 1}
                 </div>
                 <div>
-                  <input 
-                    type="text" 
-                    value={h.nombre}
-                    onChange={(e) => updateHeredero(h.id, 'nombre', e.target.value)}
-                    className="font-semibold text-slate-800 text-lg bg-transparent border-none focus:ring-0 p-0 w-full md:w-64"
-                  />
+                  <button 
+                    onClick={() => {
+                      const val = window.prompt("Editar nombre:", h.nombre);
+                      if (val) updateHeredero(h.id, 'nombre', val);
+                    }}
+                    className="font-semibold text-slate-800 text-lg hover:text-blue-600 transition text-left"
+                  >
+                    {h.nombre}
+                  </button>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-500 font-medium">Heredero Principal ({index + 1}/{herederos.length}) •</span>
-                    <input 
-                      type="text" 
-                      value={h.dni || ''}
-                      placeholder="DNI"
-                      onChange={(e) => updateHeredero(h.id, 'dni', e.target.value)}
-                      className="text-xs text-slate-500 font-medium bg-transparent border-none focus:ring-0 p-0 w-24 placeholder:text-slate-300"
-                    />
+                    <button 
+                      onClick={() => {
+                        const val = window.prompt("Editar DNI:", h.dni);
+                        if (val !== null) updateHeredero(h.id, 'dni', val);
+                      }}
+                      className="text-xs text-slate-500 font-medium hover:text-blue-600 transition text-left"
+                    >
+                      DNI: {h.dni || 'Sin especificar'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -113,20 +118,25 @@ export default function SuccessionTree() {
                           <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
                             {String.fromCharCode(97 + dIndex)}
                           </div>
-                          <div className="flex flex-col">
-                            <input 
-                              type="text" 
-                              value={d.nombre}
-                              onChange={(e) => updateDescendiente(h.id, d.id, 'nombre', e.target.value)}
-                              className="bg-transparent border-none text-sm font-medium text-slate-700 focus:ring-0 p-0 w-48"
-                            />
-                            <input 
-                              type="text" 
-                              value={d.dni || ''}
-                              placeholder="DNI"
-                              onChange={(e) => updateDescendiente(h.id, d.id, 'dni', e.target.value)}
-                              className="bg-transparent border-none text-xs text-slate-500 focus:ring-0 p-0 w-48 placeholder:text-slate-300"
-                            />
+                          <div className="flex flex-col items-start">
+                            <button 
+                              onClick={() => {
+                                const val = window.prompt("Editar nombre:", d.nombre);
+                                if (val) updateDescendiente(h.id, d.id, 'nombre', val);
+                              }}
+                              className="text-sm font-medium text-slate-700 hover:text-blue-600 transition text-left"
+                            >
+                              {d.nombre}
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const val = window.prompt("Editar DNI:", d.dni);
+                                if (val !== null) updateDescendiente(h.id, d.id, 'dni', val);
+                              }}
+                              className="text-xs text-slate-500 hover:text-blue-600 transition mt-0.5 text-left"
+                            >
+                              DNI: {d.dni || 'Sin especificar'}
+                            </button>
                           </div>
                         </div>
                         <button 

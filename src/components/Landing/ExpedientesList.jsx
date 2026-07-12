@@ -28,12 +28,16 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
 
     const dni = window.prompt("DNI del causante:") || "";
     const fecha = window.prompt("Fecha de Fallecimiento (DD/MM/AAAA):") || "";
+    const domicilio = window.prompt("Último domicilio del causante (Opcional):") || "";
+    const estadoCivil = window.prompt("Estado civil del causante (Ej: Casado, Soltero) (Opcional):") || "";
 
     try {
       await addDoc(collection(db, 'expedientes'), {
         nombreCausante: causante,
         dni: dni,
         fechaFallecimiento: fecha,
+        ultimoDomicilio: domicilio,
+        estadoCivil: estadoCivil,
         referencia: `EXP-${Date.now().toString().slice(-4)}`,
         fechaApertura: new Date().toLocaleDateString('es-ES'),
         estado: 'abiertos',
@@ -46,9 +50,9 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
   };
 
   return (
-    <div className="min-h-screen font-sans text-slate-900 bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen font-sans text-slate-900 bg-slate-50 relative">
       {/* Fondo Premium - Imagen */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/app-bg.png')] bg-cover bg-center bg-no-repeat opacity-60"></div>
         <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[1px]"></div>
       </div>

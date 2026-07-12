@@ -20,9 +20,9 @@ export default function ExpedienteDashboard({ expediente, onBack }) {
     // al cambiar de expediente (aunque estemos usando mock data, es buena práctica)
     <ExpedienteProvider key={`exp-${expediente.id}`} expedienteId={expediente.id}>
       <SuccessionProvider key={`suc-${expediente.id}`} expedienteId={expediente.id}>
-        <div className="min-h-screen font-sans text-slate-900 bg-slate-50 relative overflow-hidden">
+        <div className="min-h-screen font-sans text-slate-900 bg-slate-50 relative">
           {/* Fondo Premium - Imagen */}
-          <div className="fixed inset-0 pointer-events-none z-0 print:hidden">
+          <div className="fixed inset-0 pointer-events-none z-0 print:hidden overflow-hidden">
             <div className="absolute inset-0 bg-[url('/app-bg.png')] bg-cover bg-center bg-no-repeat opacity-60"></div>
             <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[1px]"></div>
           </div>

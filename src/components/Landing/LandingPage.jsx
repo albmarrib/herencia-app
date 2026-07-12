@@ -36,7 +36,7 @@ export default function LandingPage({ onEnter }) {
           onClick={handleAction}
           className="text-sm font-medium hover:text-blue-300 transition"
         >
-          {currentUser ? 'Ir a mis Expedientes' : 'Acceso Profesionales'}
+          Acceso Profesionales
         </button>
       </header>
 
