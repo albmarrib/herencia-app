@@ -46,9 +46,17 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen font-sans text-slate-900 bg-slate-50 relative overflow-hidden">
+      {/* Fondo Premium - Imagen */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[url('/app-bg.png')] bg-cover bg-center bg-no-repeat opacity-60"></div>
+        <div className="absolute inset-0 bg-slate-50/60 backdrop-blur-[1px]"></div>
+      </div>
+
+      {/* Contenido principal con z-10 para estar sobre el fondo */}
+      <div className="relative z-10">
       {/* Navbar simplificado */}
-      <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           {isFerrer ? (
             <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-28 md:h-36 object-contain" />
@@ -151,6 +159,7 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
           )}
         </div>
       </main>
+      </div>
     </div>
   );
 }
