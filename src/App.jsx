@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LandingPage from './components/Landing/LandingPage';
 import ExpedientesList from './components/Landing/ExpedientesList';
 import ExpedienteDashboard from './components/ExpedienteDashboard';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -20,13 +20,27 @@ function AppContent() {
     }
   }, [currentUser, currentRoute]);
 
+  // Migración automática de expedientes antiguos
+  useEffect(() => {
+    if (currentUser?.email === 'josep@ferrer-assessoria.com') {
+      getDocs(collection(db, 'expedientes')).then(snap => {
+        snap.docs.forEach(docSnap => {
+          if (!docSnap.data().userEmail) {
+            updateDoc(doc(db, 'expedientes', docSnap.id), { userEmail: 'josep@ferrer-assessoria.com' });
+          }
+        });
+      });
+    }
+  }, [currentUser]);
+
   useEffect(() => {
     if (!currentUser) {
       setExpedientes([]);
       return;
     }
-    const unsub = onSnapshot(collection(db, 'expedientes'), (snapshot) => {
-      setExpedientes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const q = query(collection(db, 'expedientes'), where('userEmail', '==', currentUser.email));
+    const unsub = onSnapshot(q, (snapshot) => {
+      setExpedientes(snapshot.docs.map(document => ({ id: document.id, ...document.data() })));
     });
     return () => unsub();
   }, [currentUser]);

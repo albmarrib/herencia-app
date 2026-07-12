@@ -33,7 +33,7 @@ export default function ExpedienteDashboard({ expediente, onBack }) {
               
               {isFerrer ? (
                 <div className="mr-4">
-                  <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-8 object-contain" />
+                  <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-28 object-contain" />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 mr-4">

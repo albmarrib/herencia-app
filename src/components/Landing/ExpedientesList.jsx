@@ -26,7 +26,7 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
       <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           {isFerrer ? (
-            <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-10 object-contain" />
+            <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-28 md:h-36 object-contain" />
           ) : (
             <>
               <div className="bg-slate-900 text-white p-2 rounded-lg">
