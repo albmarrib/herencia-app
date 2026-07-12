@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Folder, FolderOpen, Plus, Search, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ExpedientesList({ expedientes, onSelectExpediente, onBackToLanding }) {
   const [filter, setFilter] = useState('todos'); // todos, abiertos, cerrados
   const [search, setSearch] = useState('');
+  const { currentUser, logout } = useAuth();
+
+  const isFerrer = currentUser?.email === 'josep@ferrer-assessoria.com';
 
   const filteredExpedientes = expedientes.filter(exp => {
     const matchesFilter = filter === 'todos' || exp.estado === filter;
@@ -11,22 +15,36 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
     return matchesFilter && matchesSearch;
   });
 
+  const handleLogout = async () => {
+    await logout();
+    onBackToLanding();
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       {/* Navbar simplificado */}
       <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-slate-900 text-white p-2 rounded-lg">
-            <FolderOpen className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Mis Expedientes</h1>
+          {isFerrer ? (
+            <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-10 object-contain" />
+          ) : (
+            <>
+              <div className="bg-slate-900 text-white p-2 rounded-lg">
+                <FolderOpen className="w-5 h-5" />
+              </div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-800">Mis Expedientes</h1>
+            </>
+          )}
         </div>
-        <button 
-          onClick={onBackToLanding}
-          className="text-slate-500 hover:text-slate-800 flex items-center gap-2 text-sm font-medium transition"
-        >
-          <LogOut className="w-4 h-4" /> Salir
-        </button>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-slate-500 hidden sm:inline-block">{currentUser?.email}</span>
+          <button 
+            onClick={handleLogout}
+            className="text-slate-500 hover:text-slate-800 flex items-center gap-2 text-sm font-medium transition"
+          >
+            <LogOut className="w-4 h-4" /> Salir
+          </button>
+        </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-8">

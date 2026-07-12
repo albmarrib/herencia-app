@@ -7,10 +7,14 @@ import InventoryManager from './Inventory/InventoryManager';
 import ExpedienteView from './Expediente/ExpedienteView';
 import NotarySummary from './Export/NotarySummary';
 import { BookOpen, ChevronLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function ExpedienteDashboard({ expediente, onBack }) {
   const [activeTab, setActiveTab] = useState('expediente');
+  const { currentUser } = useAuth();
   
+  const isFerrer = currentUser?.email === 'josep@ferrer-assessoria.com';
+
   return (
     // Se usa la key con el ID del expediente para asegurar que los contextos se reinician 
     // al cambiar de expediente (aunque estemos usando mock data, es buena práctica)
@@ -26,13 +30,23 @@ export default function ExpedienteDashboard({ expediente, onBack }) {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="bg-slate-900 text-white p-2 rounded-lg">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-800">
-                  Legado<span className="font-light">App</span>
-                </h1>
+              
+              {isFerrer ? (
+                <div className="mr-4">
+                  <img src="/ferrer-logo.png" alt="Ferrer Assessoria" className="h-8 object-contain" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mr-4">
+                  <div className="bg-slate-900 text-white p-2 rounded-lg">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-xl font-bold tracking-tight text-slate-800">
+                    Legado<span className="font-light">App</span>
+                  </h1>
+                </div>
+              )}
+              
+              <div className="pl-4 border-l border-slate-200">
                 <p className="text-xs text-slate-500 font-medium">Exp: {expediente.nombreCausante}</p>
               </div>
             </div>

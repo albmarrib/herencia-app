@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shield, Lock, FileText, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import LoginModal from './LoginModal';
 
 export default function LandingPage({ onEnter }) {
+  const { currentUser } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+
+  const handleAction = () => {
+    if (currentUser) {
+      onEnter();
+    } else {
+      setShowLogin(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-white relative overflow-hidden">
       {/* Imagen de fondo generada por IA */}
@@ -20,10 +33,10 @@ export default function LandingPage({ onEnter }) {
           <h1 className="text-2xl font-bold tracking-tight">Legado<span className="font-light">App</span></h1>
         </div>
         <button 
-          onClick={onEnter}
+          onClick={handleAction}
           className="text-sm font-medium hover:text-blue-300 transition"
         >
-          Acceso Profesionales
+          {currentUser ? 'Ir a mis Expedientes' : 'Acceso Profesionales'}
         </button>
       </header>
 
@@ -37,7 +50,7 @@ export default function LandingPage({ onEnter }) {
         </p>
         
         <button 
-          onClick={onEnter}
+          onClick={handleAction}
           className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center gap-3 transition-transform hover:scale-105 shadow-xl shadow-blue-900/50"
         >
           Ir a mis Expedientes
@@ -67,6 +80,16 @@ export default function LandingPage({ onEnter }) {
       <footer className="relative z-10 py-6 text-center text-slate-500 text-xs">
         &copy; {new Date().getFullYear()} LegadoApp. Software para la gestión de patrimonios y sucesiones.
       </footer>
+
+      {showLogin && (
+        <LoginModal 
+          onClose={() => setShowLogin(false)} 
+          onSuccess={() => {
+            setShowLogin(false);
+            onEnter();
+          }} 
+        />
+      )}
     </div>
   );
 }

@@ -4,18 +4,32 @@ import ExpedientesList from './components/Landing/ExpedientesList';
 import ExpedienteDashboard from './components/ExpedienteDashboard';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-export default function App() {
+function AppContent() {
   const [currentRoute, setCurrentRoute] = useState('landing'); // 'landing', 'list', 'dashboard'
   const [selectedExpediente, setSelectedExpediente] = useState(null);
   const [expedientes, setExpedientes] = useState([]);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
+    // Si no está logueado, forzar a la landing
+    if (!currentUser && currentRoute !== 'landing') {
+      setCurrentRoute('landing');
+      setSelectedExpediente(null);
+    }
+  }, [currentUser, currentRoute]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setExpedientes([]);
+      return;
+    }
     const unsub = onSnapshot(collection(db, 'expedientes'), (snapshot) => {
       setExpedientes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   const handleEnterApp = () => {
     setCurrentRoute('list');
@@ -42,7 +56,7 @@ export default function App() {
         <LandingPage onEnter={handleEnterApp} />
       )}
 
-      {currentRoute === 'list' && (
+      {currentRoute === 'list' && currentUser && (
         <ExpedientesList 
           expedientes={expedientes} 
           onSelectExpediente={handleSelectExpediente}
@@ -50,12 +64,20 @@ export default function App() {
         />
       )}
 
-      {currentRoute === 'dashboard' && selectedExpediente && (
+      {currentRoute === 'dashboard' && selectedExpediente && currentUser && (
         <ExpedienteDashboard 
           expediente={selectedExpediente} 
           onBack={handleBackToList}
         />
       )}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
