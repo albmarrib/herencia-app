@@ -81,7 +81,7 @@ export default function ExpedienteDashboard({ expediente, onBack }) {
 
           <main className={`max-w-7xl mx-auto py-8 ${activeTab === 'notario' ? 'px-0' : 'px-6'}`}>
             {activeTab === 'expediente' && (
-              <ExpedienteView />
+              <ExpedienteView expediente={expediente} onBack={onBack} />
             )}
 
             {activeTab === 'inventario' && (
@@ -108,7 +108,7 @@ export default function ExpedienteDashboard({ expediente, onBack }) {
             )}
 
             {activeTab === 'notario' && (
-              <NotarySummary />
+              <NotarySummary expediente={expediente} />
             )}
           </main>
         </div>

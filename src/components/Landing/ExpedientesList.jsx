@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Folder, FolderOpen, Plus, Search, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function ExpedientesList({ expedientes, onSelectExpediente, onBackToLanding }) {
   const [filter, setFilter] = useState('todos'); // todos, abiertos, cerrados
@@ -18,6 +20,29 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
   const handleLogout = async () => {
     await logout();
     onBackToLanding();
+  };
+
+  const handleCreateExpediente = async () => {
+    const causante = window.prompt("Nombre del causante (Ej: Juan Pérez):");
+    if (!causante) return; 
+
+    const dni = window.prompt("DNI del causante:") || "";
+    const fecha = window.prompt("Fecha de Fallecimiento (DD/MM/AAAA):") || "";
+
+    try {
+      await addDoc(collection(db, 'expedientes'), {
+        nombreCausante: causante,
+        dni: dni,
+        fechaFallecimiento: fecha,
+        referencia: `EXP-${Date.now().toString().slice(-4)}`,
+        fechaApertura: new Date().toLocaleDateString('es-ES'),
+        estado: 'abiertos',
+        userEmail: currentUser.email
+      });
+    } catch (error) {
+      console.error("Error creating expediente:", error);
+      alert("Hubo un error al crear el expediente.");
+    }
   };
 
   return (
@@ -82,7 +107,10 @@ export default function ExpedientesList({ expedientes, onSelectExpediente, onBac
                 className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400 w-full md:w-64"
               />
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-sm whitespace-nowrap">
+            <button 
+              onClick={handleCreateExpediente}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition shadow-sm whitespace-nowrap"
+            >
               <Plus className="w-4 h-4" /> Nuevo Expediente
             </button>
           </div>

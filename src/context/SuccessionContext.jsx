@@ -50,18 +50,31 @@ export const SuccessionProvider = ({ children, expedienteId }) => {
   };
 
   const addHerederoPrincipal = async () => {
+    const nombre = window.prompt("Nombre del Heredero Principal:");
+    if (!nombre) return;
     const nuevoId = `hp-${Date.now()}`;
     await setDoc(doc(db, `expedientes/${expedienteId}/herederos`, nuevoId), { 
-      id: nuevoId, nombre: 'Nuevo Heredero Principal', estado: 'vivo', descendientes: [] 
+      id: nuevoId, nombre: nombre, dni: '', estado: 'vivo', descendientes: [] 
     });
   };
 
   const removeHerederoPrincipal = async (id) => await deleteDoc(doc(db, `expedientes/${expedienteId}/herederos`, id));
 
   const addDescendiente = async (idHerederoPrincipal) => {
+    const nombre = window.prompt("Nombre del Descendiente:");
+    if (!nombre) return;
     const h = herederos.find(x => x.id === idHerederoPrincipal);
     if (!h) return;
-    const nuevosDescendientes = [...h.descendientes, { id: `${h.id}-${Date.now()}`, nombre: `Nuevo Descendiente` }];
+    const nuevosDescendientes = [...h.descendientes, { id: `${h.id}-${Date.now()}`, nombre: nombre, dni: '' }];
+    await updateDoc(doc(db, `expedientes/${expedienteId}/herederos`, idHerederoPrincipal), { descendientes: nuevosDescendientes });
+  };
+
+  const updateDescendiente = async (idHerederoPrincipal, idDescendiente, field, value) => {
+    const h = herederos.find(x => x.id === idHerederoPrincipal);
+    if (!h) return;
+    const nuevosDescendientes = h.descendientes.map(d => 
+      d.id === idDescendiente ? { ...d, [field]: value } : d
+    );
     await updateDoc(doc(db, `expedientes/${expedienteId}/herederos`, idHerederoPrincipal), { descendientes: nuevosDescendientes });
   };
 

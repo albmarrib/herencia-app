@@ -1,15 +1,36 @@
 import React, { useState } from 'react';
 import { useExpediente } from '../../context/ExpedienteContext';
-import { FileText, UploadCloud, Eye, AlertCircle, CheckCircle, Plus, Trash2, Edit3, X } from 'lucide-react';
+import { FileText, UploadCloud, Eye, AlertCircle, CheckCircle, Plus, Trash2, Edit3, X, Loader2, Printer, Share2 } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase';
 
 export default function DocumentManager() {
-  const { documentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento } = useExpediente();
+  const { expedienteId, documentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento } = useExpediente();
   
   const [filter, setFilter] = useState('todos'); 
   const [nuevoDoc, setNuevoDoc] = useState({ nombre: '', requiere_archivo: true });
   const [editingDoc, setEditingDoc] = useState(null);
+  const [uploading, setUploading] = useState(null);
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const docsFiltrados = documentos.filter(d => filter === 'todos' || d.estado === filter);
+
+  const handleFileUpload = async (docId, file) => {
+    if (!file) return;
+    setUploading(docId);
+    try {
+      const storageRef = ref(storage, `expedientes/${expedienteId}/${docId}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await updateDocumento(docId, 'url_archivo', url);
+      await updateEstadoDocumento(docId, 'subido');
+    } catch (error) {
+      console.error(error);
+      alert('Error al subir el archivo. Es posible que debas activar Firebase Storage en tu consola de Firebase y configurar las reglas de lectura/escritura a true.');
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -90,7 +111,7 @@ export default function DocumentManager() {
                 bgColor = 'bg-red-50';
                 borderColor = 'border-red-200';
                 icon = <AlertCircle className="text-red-500 w-5 h-5" />;
-                statusText = 'Falta Adjuntar';
+                statusText = !doc.requiere_archivo ? 'Pendiente de Revisión' : 'Falta Adjuntar';
               }
 
               return (
@@ -114,18 +135,36 @@ export default function DocumentManager() {
 
                   <div className="flex items-center justify-end gap-2">
                     {doc.estado === 'pendiente' && doc.requiere_archivo && (
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          onChange={(e) => handleFileUpload(doc.id, e.target.files[0])}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          disabled={uploading === doc.id}
+                        />
+                        <button 
+                          className="bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                          disabled={uploading === doc.id}
+                        >
+                          {uploading === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                          {uploading === doc.id ? 'Subiendo...' : 'Subir'}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {doc.estado === 'pendiente' && !doc.requiere_archivo && (
                       <button 
-                        onClick={() => updateEstadoDocumento(doc.id, 'subido')}
-                        className="bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                        onClick={() => updateEstadoDocumento(doc.id, 'validado')}
+                        className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
                       >
-                        <UploadCloud className="w-4 h-4" /> Subir
+                        <CheckCircle className="w-4 h-4" /> Validar
                       </button>
                     )}
 
                     {(doc.estado === 'validado' || doc.estado === 'subido') && doc.url_archivo && (
                       <button 
-                        onClick={() => window.open(doc.url_archivo, '_blank')}
-                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                        onClick={() => setViewingDoc(doc)}
+                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
                       >
                         <Eye className="w-4 h-4" /> {doc.estado === 'subido' ? 'Revisar' : 'Ver'}
                       </button>
@@ -234,6 +273,64 @@ export default function DocumentManager() {
               >
                 Guardar Cambios
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Visor de Documentos */}
+      {viewingDoc && (
+        <div className="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-[100] p-4 sm:p-8 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in fade-in zoom-in duration-200">
+            {/* Header del Visor */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-lg">{viewingDoc.nombre_documento}</h3>
+                  <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Visor Documental Integrado</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    const printWindow = window.open(viewingDoc.url_archivo, '_blank');
+                    if(printWindow) printWindow.print();
+                  }}
+                  className="p-2 text-slate-600 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition"
+                  title="Imprimir"
+                >
+                  <Printer className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(viewingDoc.url_archivo);
+                    alert("Enlace copiado al portapapeles. ¡Ya puedes compartirlo!");
+                  }}
+                  className="p-2 text-slate-600 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition"
+                  title="Copiar Enlace"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                <button 
+                  onClick={() => setViewingDoc(null)} 
+                  className="p-2 bg-slate-200 hover:bg-red-100 hover:text-red-600 text-slate-700 rounded-lg transition"
+                  title="Cerrar visor"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Cuerpo del Visor */}
+            <div className="flex-1 bg-slate-200 relative">
+              <iframe 
+                src={viewingDoc.url_archivo} 
+                className="w-full h-full border-none"
+                title="Visor de documento"
+              />
             </div>
           </div>
         </div>

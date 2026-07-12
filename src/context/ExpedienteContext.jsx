@@ -54,7 +54,7 @@ export const ExpedienteProvider = ({ children, expedienteId }) => {
 
   return (
     <ExpedienteContext.Provider value={{
-      currentUser,
+      currentUser, expedienteId,
       tareas, setTareas, toggleEstadoTarea, addTarea, deleteTarea, updateTarea,
       documentos, setDocumentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento
     }}>

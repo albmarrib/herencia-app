@@ -3,17 +3,16 @@ import { useExpediente } from '../../context/ExpedienteContext';
 import { useSuccession } from '../../context/SuccessionContext';
 import { Printer } from 'lucide-react';
 
-export default function NotarySummary() {
+export default function NotarySummary({ expediente }) {
   const { documentos } = useExpediente();
   const { masaHereditaria, bienes, deudas, calculos, herederos } = useSuccession();
 
-  // Causante Mock Data
   const causante = {
-    nombre: 'Antonio García Martínez',
-    dni: '12345678X',
-    fechaFallecimiento: '15/05/2026',
-    estadoCivil: 'Viudo',
-    ultimoDomicilio: 'Calle Mayor 12, Madrid'
+    nombre: expediente?.nombreCausante || 'No definido',
+    dni: expediente?.dni || '---',
+    fechaFallecimiento: expediente?.fechaFallecimiento || '---',
+    estadoCivil: expediente?.estadoCivil || '---',
+    ultimoDomicilio: expediente?.ultimoDomicilio || '---'
   };
 
   const documentosValidados = documentos.filter(d => d.estado === 'validado');
@@ -146,7 +145,7 @@ export default function NotarySummary() {
                       <tr key={h.id} className="border-b border-slate-100 print:border-slate-300">
                         <td className="py-3">
                           <span className="font-bold text-slate-900">{h.nombre}</span>
-                          <span className="text-xs text-slate-500 block">Heredero Principal ({idx + 1}/{herederos.length})</span>
+                          <span className="text-xs text-slate-500 block">DNI: {h.dni || '---'} • Heredero Principal ({idx + 1}/{herederos.length})</span>
                         </td>
                         <td className="py-3 text-right text-slate-700">{calc.cuotaPorcentaje.toFixed(2)}%</td>
                         <td className="py-3 text-right font-bold text-emerald-700 print:text-black">{formatter.format(calc.importe)}</td>
@@ -182,7 +181,7 @@ export default function NotarySummary() {
                                   <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-300 print:bg-black"></div>
                                   <div className="absolute left-3 top-1/2 w-4 h-px bg-slate-300 print:bg-black"></div>
                                   <span className="font-semibold text-slate-800">{d.nombre}</span>
-                                  <span className="text-xs text-slate-500 block">Descendiente de {h.nombre}</span>
+                                  <span className="text-xs text-slate-500 block">DNI: {d.dni || '---'} • Descendiente de {h.nombre}</span>
                                 </td>
                                 <td className="py-2 text-right text-slate-600">{calc.cuotaPorcentaje.toFixed(2)}%</td>
                                 <td className="py-2 text-right font-bold text-emerald-600 print:text-black">{formatter.format(calc.importe)}</td>
