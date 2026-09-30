@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useExpediente } from '../../context/ExpedienteContext';
 import { useSuccession } from '../../context/SuccessionContext';
-import { Printer } from 'lucide-react';
+import { Printer, DownloadCloud, Loader2 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function NotarySummary({ expediente }) {
   const { documentos } = useExpediente();
+  const [zipping, setZipping] = useState(false);
   const { masaHereditaria, bienes, deudas, calculos, herederos } = useSuccession();
 
   const causante = {
@@ -15,7 +18,9 @@ export default function NotarySummary({ expediente }) {
     ultimoDomicilio: expediente?.ultimoDomicilio || '---'
   };
 
-  const documentosValidados = documentos.filter(d => d.estado === 'validado');
+  const documentosValidados = documentos
+    .filter(d => d.estado === 'validado')
+    .sort((a, b) => (a.orden || 0) - (b.orden || 0));
   
   const formatter = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
 
@@ -23,11 +28,73 @@ export default function NotarySummary({ expediente }) {
     window.print();
   };
 
+  const handleDownloadZip = async () => {
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      let hasFiles = false;
+      
+      const validados = documentosValidados.filter(d => !!d.url_archivo);
+      
+      if (validados.length === 0) {
+        alert("No hay documentos validados que tengan un archivo adjunto.");
+        setZipping(false);
+        return;
+      }
+
+      let errorMensajes = [];
+      
+      for (const docItem of validados) {
+        try {
+          const response = await fetch(docItem.url_archivo);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          
+          let ext = '.pdf';
+          const type = response.headers.get('content-type');
+          if (type) {
+            if (type.includes('image/jpeg')) ext = '.jpg';
+            else if (type.includes('image/png')) ext = '.png';
+          }
+          
+          zip.file(`${docItem.nombre_documento.replace(/[/\\?%*:|"<>]/g, '-')}${ext}`, blob);
+          hasFiles = true;
+        } catch (err) {
+          console.error("Error downloading file", docItem.nombre_documento, err);
+          errorMensajes.push(docItem.nombre_documento);
+        }
+      }
+      
+      if (hasFiles) {
+        const content = await zip.generateAsync({ type: 'blob' });
+        saveAs(content, `Documentos_Validados_${causante.nombre.replace(/\s+/g, '_') || 'Expediente'}.zip`);
+        if (errorMensajes.length > 0) {
+          alert(`El ZIP se generó, pero los siguientes archivos fallaron debido a permisos de seguridad (CORS): ${errorMensajes.join(', ')}`);
+        }
+      } else {
+        alert(`No se pudo descargar ningún archivo. Esto suele pasar por un bloqueo de seguridad (CORS) en Firebase. Documentos que fallaron: ${errorMensajes.join(', ')}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Hubo un error al generar el archivo ZIP.");
+    } finally {
+      setZipping(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl sm:p-10 p-6 min-h-[1056px] print:shadow-none print:p-0 print:m-0">
       
-      {/* Botón Imprimir Oculto en impresión */}
-      <div className="flex justify-end mb-8 print:hidden">
+      {/* Botones Ocultos en impresión */}
+      <div className="flex justify-end gap-3 mb-8 print:hidden">
+        <button 
+          onClick={handleDownloadZip}
+          disabled={zipping}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {zipping ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />} 
+          {zipping ? 'Generando ZIP...' : 'Descargar Docs. (ZIP)'}
+        </button>
         <button 
           onClick={handlePrint}
           className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg shadow-sm transition"

@@ -1,11 +1,82 @@
 import React, { useState } from 'react';
 import { useExpediente } from '../../context/ExpedienteContext';
-import { FileText, UploadCloud, Eye, AlertCircle, CheckCircle, Plus, Trash2, Edit3, X, Loader2, Printer, Share2 } from 'lucide-react';
+import { FileText, UploadCloud, Eye, AlertCircle, CheckCircle, Plus, Trash2, Edit3, X, Loader2, Printer, Share2, MoveVertical } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableDocumentItem({ docItem, setEditingDoc, handleFileUpload, uploading, updateEstadoDocumento, setViewingDoc, deleteDocumento }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({id: docItem.id});
+  
+  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 1, position: 'relative' };
+  let bgColor, borderColor, icon, statusText;
+  
+  if (docItem.estado === 'validado') {
+    bgColor = 'bg-emerald-50'; borderColor = 'border-emerald-200'; icon = <CheckCircle className="text-emerald-500 w-5 h-5" />; statusText = 'Validado';
+  } else if (docItem.estado === 'subido') {
+    bgColor = 'bg-amber-50'; borderColor = 'border-amber-200'; icon = <Eye className="text-amber-500 w-5 h-5" />; statusText = 'En Revisión';
+  } else {
+    bgColor = 'bg-red-50'; borderColor = 'border-red-200'; icon = <AlertCircle className="text-red-500 w-5 h-5" />; statusText = !docItem.requiere_archivo ? 'Pendiente de Revisión' : 'Falta Adjuntar';
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border ${bgColor} ${borderColor} transition-all group ${isDragging ? 'shadow-xl opacity-90 scale-[1.02] ring-2 ring-blue-400' : ''} bg-white`}>
+      <div className="flex items-center gap-3 mb-3 sm:mb-0 flex-1 mr-4">
+        <div 
+          {...attributes} 
+          {...listeners} 
+          className="cursor-grab hover:text-blue-600 text-slate-400 p-1.5 -ml-2 touch-none hover:bg-slate-100 rounded flex flex-col items-center justify-center transition-colors"
+          title="Arrastrar para reordenar"
+        >
+          <MoveVertical className="w-5 h-5" />
+        </div>
+        <div className="bg-white p-2 rounded-lg shadow-sm shrink-0 cursor-pointer" onClick={() => setEditingDoc(docItem)}>
+          {icon}
+        </div>
+        <div className="flex-1 w-full cursor-pointer" onClick={() => setEditingDoc(docItem)}>
+          <h3 className="font-semibold text-slate-800 text-sm">{docItem.nombre_documento}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${docItem.estado === 'validado' ? 'text-emerald-600' : docItem.estado === 'subido' ? 'text-amber-600' : 'text-red-600'}`}>{statusText}</span>
+            {!docItem.requiere_archivo && <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full">INFORMATIVO</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        {docItem.estado === 'pendiente' && docItem.requiere_archivo && (
+          <div className="relative">
+            <input type="file" onChange={(e) => handleFileUpload(docItem.id, e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={uploading === docItem.id} />
+            <button className="bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5" disabled={uploading === docItem.id}>
+              {uploading === docItem.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+              {uploading === docItem.id ? 'Subiendo...' : 'Subir'}
+            </button>
+          </div>
+        )}
+        {docItem.estado === 'pendiente' && !docItem.requiere_archivo && (
+          <button onClick={() => updateEstadoDocumento(docItem.id, 'validado')} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"><CheckCircle className="w-4 h-4" /> Validar</button>
+        )}
+        {(docItem.estado === 'validado' || docItem.estado === 'subido') && docItem.url_archivo && (
+          <button onClick={() => setViewingDoc(docItem)} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"><Eye className="w-4 h-4" /> {docItem.estado === 'subido' ? 'Revisar' : 'Ver'}</button>
+        )}
+        {docItem.estado === 'subido' && (
+          <><button onClick={() => updateEstadoDocumento(docItem.id, 'validado')} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"><CheckCircle className="w-4 h-4" /> Validar</button>
+          <button onClick={() => updateEstadoDocumento(docItem.id, 'pendiente')} className="text-slate-400 hover:text-red-500 px-2 py-1 transition text-[10px] underline">Rechazar</button></>
+        )}
+        {docItem.estado === 'validado' && (
+          <button onClick={() => updateEstadoDocumento(docItem.id, 'pendiente')} className="text-slate-400 hover:text-red-500 px-2 py-1 transition text-[10px] underline">Deshacer Validación</button>
+        )}
+        <button onClick={() => setEditingDoc(docItem)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-white rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-1" title="Editar Documento"><Edit3 className="w-4 h-4" /></button>
+        <button onClick={() => deleteDocumento(docItem.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-1" title="Eliminar Documento"><Trash2 className="w-4 h-4" /></button>
+      </div>
+    </div>
+  );
+}
+
 
 export default function DocumentManager() {
-  const { expedienteId, documentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento } = useExpediente();
+  const { expedienteId, documentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento, updateDoc, doc, db } = useExpediente();
   
   const [filter, setFilter] = useState('todos'); 
   const [nuevoDoc, setNuevoDoc] = useState({ nombre: '', requiere_archivo: true });
@@ -13,7 +84,28 @@ export default function DocumentManager() {
   const [uploading, setUploading] = useState(null);
   const [viewingDoc, setViewingDoc] = useState(null);
 
-  const docsFiltrados = documentos.filter(d => filter === 'todos' || d.estado === filter);
+  const docsFiltrados = [...documentos]
+    .filter(d => filter === 'todos' || d.estado === filter)
+    .sort((a, b) => (a.orden || 0) - (b.orden || 0));
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const oldIndex = docsFiltrados.findIndex((d) => d.id === active.id);
+      const newIndex = docsFiltrados.findIndex((d) => d.id === over.id);
+      const newOrder = arrayMove(docsFiltrados, oldIndex, newIndex);
+      newOrder.forEach((item, index) => {
+        if (item.orden !== index) {
+          updateDoc(doc(db, `expedientes/${expedienteId}/documentos`, item.id), { orden: index });
+        }
+      });
+    }
+  };
 
   const handleFileUpload = async (docId, file) => {
     if (!file) return;
@@ -94,126 +186,22 @@ export default function DocumentManager() {
           {docsFiltrados.length === 0 ? (
             <p className="text-sm text-slate-400 italic text-center py-4">No se encontraron documentos.</p>
           ) : (
-            docsFiltrados.map(doc => {
-              let bgColor, borderColor, icon, statusText;
-              
-              if (doc.estado === 'validado') {
-                bgColor = 'bg-emerald-50';
-                borderColor = 'border-emerald-200';
-                icon = <CheckCircle className="text-emerald-500 w-5 h-5" />;
-                statusText = 'Validado';
-              } else if (doc.estado === 'subido') {
-                bgColor = 'bg-amber-50';
-                borderColor = 'border-amber-200';
-                icon = <Eye className="text-amber-500 w-5 h-5" />;
-                statusText = 'En Revisión';
-              } else {
-                bgColor = 'bg-red-50';
-                borderColor = 'border-red-200';
-                icon = <AlertCircle className="text-red-500 w-5 h-5" />;
-                statusText = !doc.requiere_archivo ? 'Pendiente de Revisión' : 'Falta Adjuntar';
-              }
-
-              return (
-                <div key={doc.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border ${bgColor} ${borderColor} transition-all group`}>
-                  <div className="flex items-center gap-3 mb-3 sm:mb-0 flex-1 mr-4 cursor-pointer" onClick={() => setEditingDoc(doc)}>
-                    <div className="bg-white p-2 rounded-lg shadow-sm shrink-0">
-                      {icon}
-                    </div>
-                    <div className="flex-1 w-full">
-                      <h3 className="font-semibold text-slate-800 text-sm">{doc.nombre_documento}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${doc.estado === 'validado' ? 'text-emerald-600' : doc.estado === 'subido' ? 'text-amber-600' : 'text-red-600'}`}>
-                          {statusText}
-                        </span>
-                        {!doc.requiere_archivo && (
-                          <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full">INFORMATIVO</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2">
-                    {doc.estado === 'pendiente' && doc.requiere_archivo && (
-                      <div className="relative">
-                        <input 
-                          type="file" 
-                          onChange={(e) => handleFileUpload(doc.id, e.target.files[0])}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          disabled={uploading === doc.id}
-                        />
-                        <button 
-                          className="bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-                          disabled={uploading === doc.id}
-                        >
-                          {uploading === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-                          {uploading === doc.id ? 'Subiendo...' : 'Subir'}
-                        </button>
-                      </div>
-                    )}
-                    
-                    {doc.estado === 'pendiente' && !doc.requiere_archivo && (
-                      <button 
-                        onClick={() => updateEstadoDocumento(doc.id, 'validado')}
-                        className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Validar
-                      </button>
-                    )}
-
-                    {(doc.estado === 'validado' || doc.estado === 'subido') && doc.url_archivo && (
-                      <button 
-                        onClick={() => setViewingDoc(doc)}
-                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-                      >
-                        <Eye className="w-4 h-4" /> {doc.estado === 'subido' ? 'Revisar' : 'Ver'}
-                      </button>
-                    )}
-
-                    {doc.estado === 'subido' && (
-                      <>
-                        <button 
-                          onClick={() => updateEstadoDocumento(doc.id, 'validado')}
-                          className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-                        >
-                          <CheckCircle className="w-4 h-4" /> Validar
-                        </button>
-                        <button 
-                          onClick={() => updateEstadoDocumento(doc.id, 'pendiente')}
-                          className="text-slate-400 hover:text-red-500 px-2 py-1 transition text-[10px] underline"
-                        >
-                          Rechazar
-                        </button>
-                      </>
-                    )}
-                    
-                    {doc.estado === 'validado' && (
-                       <button 
-                        onClick={() => updateEstadoDocumento(doc.id, 'pendiente')}
-                        className="text-slate-400 hover:text-red-500 px-2 py-1 transition text-[10px] underline"
-                      >
-                        Deshacer Validación
-                      </button>
-                    )}
-
-                    <button 
-                      onClick={() => setEditingDoc(doc)}
-                      className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-white rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-1"
-                      title="Editar Documento"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => deleteDocumento(doc.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors opacity-0 group-hover:opacity-100 ml-1"
-                      title="Eliminar Documento"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={docsFiltrados} strategy={verticalListSortingStrategy}>
+                {docsFiltrados.map(docItem => (
+                  <SortableDocumentItem 
+                    key={docItem.id} 
+                    docItem={docItem} 
+                    setEditingDoc={setEditingDoc} 
+                    handleFileUpload={handleFileUpload} 
+                    uploading={uploading} 
+                    updateEstadoDocumento={updateEstadoDocumento} 
+                    setViewingDoc={setViewingDoc} 
+                    deleteDocumento={deleteDocumento} 
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>

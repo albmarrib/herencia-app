@@ -47,7 +47,8 @@ export const ExpedienteProvider = ({ children, expedienteId }) => {
 
   const addDocumento = async (docData) => {
     const newId = `d-${Date.now()}`;
-    await setDoc(doc(db, `expedientes/${expedienteId}/documentos`, newId), { ...docData, id: newId, estado: 'pendiente', url_archivo: null });
+    const orden = documentos.length;
+    await setDoc(doc(db, `expedientes/${expedienteId}/documentos`, newId), { ...docData, id: newId, estado: 'pendiente', url_archivo: null, orden });
   };
   const deleteDocumento = async (id) => await deleteDoc(doc(db, `expedientes/${expedienteId}/documentos`, id));
   const updateDocumento = async (id, field, value) => await updateDoc(doc(db, `expedientes/${expedienteId}/documentos`, id), { [field]: value });
@@ -56,7 +57,7 @@ export const ExpedienteProvider = ({ children, expedienteId }) => {
     <ExpedienteContext.Provider value={{
       currentUser, expedienteId,
       tareas, setTareas, toggleEstadoTarea, addTarea, deleteTarea, updateTarea,
-      documentos, setDocumentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento
+      documentos, setDocumentos, updateEstadoDocumento, addDocumento, deleteDocumento, updateDocumento, updateDoc, doc, db
     }}>
       {children}
     </ExpedienteContext.Provider>
